@@ -1,6 +1,7 @@
 package com.da.orm;
 
-import java.io.IOException;
+import com.da.orm.utils.StringUtil;
+
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -27,7 +28,7 @@ public class DBUtil {
     private Connection connection;
 
     public DBUtil() {
-        initConnect(0);
+        initConnect();
     }
 
     public DBUtil(String username, String password, String url, String driver) {
@@ -35,15 +36,36 @@ public class DBUtil {
         this.password = password;
         this.url = url;
         this.driver = driver;
-        initConnect(1);
+        initConnect();
     }
 
     //    初始化连接
-    private void initConnect(int type) {
+    private void initConnect() {
         try {
-            if (type == 0) {
-//              读取配置文件
-                final InputStream is = this.getClass().getClassLoader().getResourceAsStream("simple-orm.properties");
+//            连接信息只要一个为空就尝试从配置文件中获取连接信息
+            if (StringUtil.isEmpty(username) || StringUtil.isEmpty(password) || StringUtil.isEmpty(url) || StringUtil.isEmpty(driver)) {
+                readConfigInfo();
+                if (StringUtil.isEmpty(username)) throw new RuntimeException("username 信息有误");
+                if (StringUtil.isEmpty(password)) throw new RuntimeException("password 信息有误");
+                if (StringUtil.isEmpty(url)) throw new RuntimeException("url 信息有误");
+                if (StringUtil.isEmpty(driver)) throw new RuntimeException("driver 信息有误");
+            }
+            Class.forName(driver);
+            connection = DriverManager.getConnection(url, username, password);
+            System.out.println("数据库连接成功");
+        } catch (ClassNotFoundException | SQLException e) {
+            System.out.println("数据库连接失败");
+            e.printStackTrace();
+        }
+    }
+
+    //    读取配置文件
+    private void readConfigInfo() {
+        try {
+            final InputStream is = this.getClass().getClassLoader().getResourceAsStream("simple-orm.properties");
+            if (null == is) {
+                throw new RuntimeException("没有找到配置文件,请检查配置文件 simple-orm.properties 是否在 resources 目录下");
+            } else {
                 final Properties properties = new Properties();
                 properties.load(is);
                 this.username = properties.getProperty("username");
@@ -51,11 +73,7 @@ public class DBUtil {
                 this.url = properties.getProperty("url");
                 this.driver = properties.getProperty("driver");
             }
-            Class.forName(driver);
-            connection = DriverManager.getConnection(url, username, password);
-            System.out.println("数据库连接成功");
-        } catch (ClassNotFoundException | SQLException | IOException e) {
-            System.out.println("数据库连接失败");
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

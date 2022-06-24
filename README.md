@@ -1,13 +1,14 @@
 # 简单封装一个自己的orm框架
 
 创建一张user表
+
 ```sql
 create table user
 (
     id   int auto_increment primary key,
     name varchar(25) null,
     pass varchar(25) null,
-    time datetime    null
+    time datetime null
 );
 ```
 
@@ -103,6 +104,7 @@ public class UserDao extends BaseDao<User> {
 ```
 
 增删改查
+
 ```java
 package com.da;
 
@@ -125,6 +127,9 @@ public class App {
         System.out.println(userDao.add(user));
 //        获取表中所有的数据
         final List<User> users = userDao.list();
+//        分页查询(当前页,每页的条数)
+        final List<User> pages = userDao.pages(2, 2);
+        pages.forEach(System.out::println);
 //        通过主键获取
         final User id = userDao.getById(11);
 //        通过主键删除

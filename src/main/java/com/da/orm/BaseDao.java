@@ -71,7 +71,7 @@ public class BaseDao<T> {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            closeConnection(null, statement, null);
+            closeConnection(statement, null);
         }
         return false;
     }
@@ -97,9 +97,36 @@ public class BaseDao<T> {
             e.printStackTrace();
         } finally {
 //            关闭连接
-            closeConnection(null, statement, resultSet);
+            closeConnection(statement, resultSet);
         }
         throw new RuntimeException("没有查询到对应的信息");
+    }
+
+    //    分页查询
+    public List<T> pages(int current, int pageSize) {
+        final StringBuilder sql = new StringBuilder();
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        try {
+            final T t = po.newInstance();
+            sql.append("SELECT ")
+                    .append(getTableField(t))
+                    .append(" FROM ")
+                    .append(getTableName(t))
+                    .append(" LIMIT ")
+                    .append(pageSize)
+                    .append(" OFFSET ")
+                    .append(pageSize * (current - 1));
+            System.out.println(sql);
+            statement = connection.prepareStatement(sql.toString());
+            resultSet = statement.executeQuery();
+            return parseResultSet(resultSet, t);
+        } catch (InstantiationException | IllegalAccessException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeConnection(statement, resultSet);
+        }
+        throw new RuntimeException("没有找到当前分页的信息");
     }
 
     //    解析查询出来的结果
@@ -168,7 +195,7 @@ public class BaseDao<T> {
             e.printStackTrace();
         } finally {
 //            关闭连接
-            closeConnection(null, statement, resultSet);
+            closeConnection(statement, resultSet);
         }
         throw new RuntimeException("没有查到对应的信息");
     }
@@ -190,7 +217,7 @@ public class BaseDao<T> {
         } catch (InstantiationException | IllegalAccessException | SQLException e) {
             e.printStackTrace();
         } finally {
-            closeConnection(null, statement, null);
+            closeConnection(statement, null);
         }
         return false;
     }
@@ -217,7 +244,7 @@ public class BaseDao<T> {
         } catch (IllegalAccessException | SQLException e) {
             e.printStackTrace();
         } finally {
-            closeConnection(null, statement, null);
+            closeConnection(statement, null);
         }
         return false;
     }
@@ -322,11 +349,8 @@ public class BaseDao<T> {
     }
 
     //    关闭连接
-    private void closeConnection(Connection connection, Statement statement, ResultSet resultSet) {
+    private void closeConnection(Statement statement, ResultSet resultSet) {
         try {
-            if (connection != null) {
-                connection.close();
-            }
             if (statement != null) {
                 statement.close();
             }

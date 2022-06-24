@@ -4,7 +4,6 @@ package com.da;
 import com.da.dao.UserDao;
 import com.da.po.User;
 
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -22,22 +21,26 @@ import java.util.List;
 public class App {
 
     public static void main(String[] args) {
-        final User user = new User();
-        user.setId(15);
-        user.setName("admin15");
-        user.setPass("admin15");
-        user.setTime(new Date(System.currentTimeMillis()));
+//        final User user = new User();
+//        user.setId(15);
+//        user.setName("admin15");
+//        user.setPass("admin15");
+//        user.setTime(new Date(System.currentTimeMillis()));
         final UserDao userDao = new UserDao();
 //        新增
-        System.out.println(userDao.add(user));
+//        System.out.println(userDao.add(user));
 //        获取表中所有的数据
-        final List<User> users = userDao.list();
+//        final List<User> users = userDao.list();
+//        users.forEach(System.out::println);
+//        分页查询(当前页,每页的条数)
+        final List<User> pages = userDao.pages(1, 2);
+        pages.forEach(System.out::println);
 //        通过主键获取
-        final User id = userDao.getById(11);
+//        final User id = userDao.getById(11);
 //        通过主键删除
-        System.out.println(userDao.deleteById(16));
+//        System.out.println(userDao.deleteById(16));
 //        通过主键更新
-        System.out.println(userDao.updateById(user));
+//        System.out.println(userDao.updateById(user));
 //        关闭连接
         userDao.closeConnection();
     }
