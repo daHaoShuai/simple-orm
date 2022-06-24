@@ -42,6 +42,18 @@ public class StringUtil {
         return result.toString();
     }
 
+    //    下划线命名改驼峰式命名
+    public static String convertToLineHump(String str) {
+        final StringBuilder result = new StringBuilder();
+//        用_分开
+        final String[] split = str.split("_");
+        for (String s : split) {
+//            首字母转大写
+            result.append(s.substring(0, 1).toUpperCase()).append(s.substring(1));
+        }
+        return result.toString();
+    }
+
     //    拼接List并且用指定的字符隔开
     public static String join(List<String> data, String str) {
         final Optional<String> reduce = data.stream().reduce((o, n) -> o + str + n);

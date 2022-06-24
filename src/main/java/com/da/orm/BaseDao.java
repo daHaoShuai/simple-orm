@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * @Time: 11:54
  * 基础的增删改查
  */
-public class BaseDao<T> {
+public class BaseDao<T> implements BaseCrud<T> {
     //    获取数据库连接
     private final DBUtil dbUtil = new DBUtil();
     public final Connection connection = dbUtil.getConnection();
@@ -52,26 +52,20 @@ public class BaseDao<T> {
     }
 
     //    关闭连接
+    @Override
     public void closeConnection() {
         dbUtil.closeConnection();
         System.out.println("数据库连接关闭");
     }
 
     //    新增数据
+    @Override
     public boolean add(T t) {
         PreparedStatement statement = null;
         try {
-            final StringBuilder sql = new StringBuilder();
-            sql.append("INSERT INTO ")
-                    .append(getTableName(t))
-                    .append(" (")
-                    .append(getTableField(t))
-                    .append(") VALUES (")
-                    .append(getTableFieldValue(t))
-                    .append(")");
-            System.out.println("sql = " + sql);
-//            获取填充好值的 PreparedStatement
-            statement = getStatement(connection.prepareStatement(sql.toString()), t);
+            //            获取填充好值的 PreparedStatement
+            String sql = "INSERT INTO " + getTableName(t) + " (" + getTableField(t) + ") VALUES (" + getTableFieldValue(t) + ")";
+            statement = getStatement(connection.prepareStatement(sql), t);
             assert statement != null;
             final int i = statement.executeUpdate();
             if (i > 0) {
@@ -94,19 +88,15 @@ public class BaseDao<T> {
     }
 
     //    获取表中所有的数据
+    @Override
     public List<T> list() {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         try {
 //            通过传入的实例获取信息
             final T po = this.po.newInstance();
-            final StringBuilder sql = new StringBuilder();
-            sql.append("SELECT ")
-                    .append(getTableField(po))
-                    .append(" FROM ")
-                    .append(getTableName(po));
-            System.out.println(sql);
-            statement = connection.prepareStatement(sql.toString());
+            String sql = "SELECT " + getTableField(po) + " FROM " + getTableName(po);
+            statement = connection.prepareStatement(sql);
             resultSet = statement.executeQuery();
 //            返回解析好的类型对象
             return parseResultSet(resultSet, po);
@@ -120,6 +110,7 @@ public class BaseDao<T> {
     }
 
     //    分页查询
+    @Override
     public List<T> pages(int current, int pageSize) {
         final StringBuilder sql = new StringBuilder();
         PreparedStatement statement = null;
@@ -134,7 +125,6 @@ public class BaseDao<T> {
                     .append(pageSize)
                     .append(" OFFSET ")
                     .append(pageSize * (current - 1));
-            System.out.println(sql);
             statement = connection.prepareStatement(sql.toString());
             resultSet = statement.executeQuery();
             return parseResultSet(resultSet, t);
@@ -189,6 +179,7 @@ public class BaseDao<T> {
     }
 
     //    通过主键获取实体类
+    @Override
     public <O> T getById(O id) {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
@@ -202,7 +193,6 @@ public class BaseDao<T> {
                     .append(getTablePrimaryKeyName())
                     .append("=")
                     .append(id);
-            System.out.println(sql);
             statement = connection.prepareStatement(sql.toString());
             resultSet = statement.executeQuery();
             final List<T> list = parseResultSet(resultSet, po.newInstance());
@@ -218,6 +208,7 @@ public class BaseDao<T> {
     }
 
     //    通过主键删除
+    @Override
     public <O> boolean deleteById(O id) {
         final StringBuilder sql = new StringBuilder();
         PreparedStatement statement = null;
@@ -228,7 +219,6 @@ public class BaseDao<T> {
                     .append(getTablePrimaryKeyName())
                     .append("=")
                     .append(id);
-            System.out.println(sql);
             statement = connection.prepareStatement(sql.toString());
             final int i = statement.executeUpdate();
             if (i > 0) {
@@ -250,6 +240,7 @@ public class BaseDao<T> {
     }
 
     //    通过实体类的主键更新
+    @Override
     public boolean updateById(T t) {
         final StringBuilder sql = new StringBuilder();
         PreparedStatement statement = null;
@@ -265,7 +256,6 @@ public class BaseDao<T> {
                     .append("=")
                     .append(primaryKey.get(t));
             primaryKey.setAccessible(false);
-            System.out.println(sql);
             statement = getStatement(connection.prepareStatement(sql.toString()), t);
             final int i = statement.executeUpdate();
             if (i > 0) {
@@ -273,6 +263,47 @@ public class BaseDao<T> {
                 return true;
             }
         } catch (IllegalAccessException | SQLException e) {
+            e.printStackTrace();
+            try {
+                connection.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
+        } finally {
+            closeConnection(statement, null);
+        }
+        return false;
+    }
+
+    //    通过自定义的sql语句查询
+    @Override
+    public List<T> query(String sql) {
+        System.out.println(sql);
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        try {
+            statement = connection.prepareStatement(sql);
+            resultSet = statement.executeQuery();
+            return parseResultSet(resultSet, po.newInstance());
+        } catch (SQLException | InstantiationException | IllegalAccessException e) {
+            e.printStackTrace();
+        } finally {
+            closeConnection(statement, resultSet);
+        }
+        throw new RuntimeException("执行sql语句出错");
+    }
+
+    //    执行增删改操作
+    @Override
+    public boolean exec(String sql) {
+        PreparedStatement statement = null;
+        try {
+            statement = connection.prepareStatement(sql);
+            if (statement.executeUpdate() > 0) {
+                connection.commit();
+                return true;
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
             try {
                 connection.rollback();

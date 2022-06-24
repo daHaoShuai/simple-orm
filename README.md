@@ -136,6 +136,11 @@ public class App {
         System.out.println(userDao.deleteById(16));
 //        通过主键更新
         System.out.println(userDao.updateById(user));
+//        执行sql语句查询信息
+        final List<User> list = userDao.query("select * from user where id = 1");
+        System.out.println(list);
+//        执行增删改操作
+        System.out.println(userDao.exec("insert into user(name,pass) values('aa','bb')"));
 //        关闭连接
         userDao.closeConnection();
     }
