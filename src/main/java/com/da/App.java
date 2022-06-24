@@ -1,6 +1,7 @@
 package com.da;
 
 import com.da.dao.UserDao;
+import com.da.orm.utils.Sql;
 import com.da.po.User;
 
 import java.util.List;
@@ -20,13 +21,9 @@ import java.util.List;
 public class App {
 
     public static void main(String[] args) {
-        final UserDao userDao = new UserDao();
-//        执行sql语句查询信息
-        final List<User> list = userDao.query("select id,name,pass from user where pass='bb' and id=19");
-        System.out.println(list);
-//        执行增删改操作
-//        System.out.println(userDao.exec("insert into user(name,pass) values('aa','bb')"));
-//        userDao.closeConnection();
+        final Sql sql = new Sql();
+        final String s = sql.select(User.class).build();
+        System.out.println(s);
     }
 
 }

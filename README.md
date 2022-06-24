@@ -141,6 +141,7 @@ public class App {
         System.out.println(list);
 //        执行增删改操作
         System.out.println(userDao.exec("insert into user(name,pass) values('aa','bb')"));
+        System.out.println(userDao.exec("delete from user where name='aa'"));
 //        关闭连接
         userDao.closeConnection();
     }

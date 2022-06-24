@@ -6,7 +6,6 @@ import com.da.orm.utils.StringUtil;
 import com.da.orm.utils.Utils;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -36,18 +35,34 @@ import java.util.stream.Collectors;
  * 基础的增删改查
  */
 public class BaseDao<T> implements BaseCrud<T> {
+    //    实例化数据库连接工具类
+    private final DBUtil dbUtil;
     //    获取数据库连接
-    private final DBUtil dbUtil = new DBUtil();
-    public final Connection connection = dbUtil.getConnection();
+    public final Connection connection;
     //    对应的实体类类型
     private final Class<T> po;
+    //    当前实体类上所有的属性
+    private final List<Field> allField;
+    //    对应表的字段名字
+    private final List<String> allFieldName;
+    //    实体类对应的表名
+    private final String tableName;
+    //    主键属性
+    private final Field primaryKey;
 
+    //    初始化信息
     public BaseDao(Class<T> po) {
+        this.dbUtil = new DBUtil();
+        connection = dbUtil.getConnection();
         this.po = po;
+        allField = Arrays.asList(po.getDeclaredFields());
+        allFieldName = getAllFieldName();
+        tableName = getTableName(po);
+        primaryKey = getTablePrimaryKey();
         try {
 //            关闭自动提交
             connection.setAutoCommit(false);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -64,8 +79,8 @@ public class BaseDao<T> implements BaseCrud<T> {
     public boolean add(T t) {
         PreparedStatement statement = null;
         try {
-            //            获取填充好值的 PreparedStatement
-            String sql = "INSERT INTO " + getTableName(t) + " (" + getTableField(t) + ") VALUES (" + getTableFieldValue(t) + ")";
+//            获取填充好值的 PreparedStatement
+            String sql = "INSERT INTO " + tableName + " (" + getTableField() + ") VALUES (" + getTableFieldValue() + ")";
             statement = getStatement(connection.prepareStatement(sql), t);
             assert statement != null;
             final int i = statement.executeUpdate();
@@ -96,7 +111,8 @@ public class BaseDao<T> implements BaseCrud<T> {
         try {
 //            通过传入的实例获取信息
             final T po = this.po.newInstance();
-            String sql = "SELECT " + getTableField(po) + " FROM " + getTableName(po);
+            String sql = "SELECT " + getTableField() + " FROM " + tableName;
+            System.out.println(sql);
             statement = connection.prepareStatement(sql);
             resultSet = statement.executeQuery();
 //            返回解析好的类型对象
@@ -119,9 +135,9 @@ public class BaseDao<T> implements BaseCrud<T> {
         try {
             final T t = po.newInstance();
             sql.append("SELECT ")
-                    .append(getTableField(t))
+                    .append(getTableField())
                     .append(" FROM ")
-                    .append(getTableName(t))
+                    .append(tableName)
                     .append(" LIMIT ")
                     .append(pageSize)
                     .append(" OFFSET ")
@@ -129,7 +145,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             statement = connection.prepareStatement(sql.toString());
             resultSet = statement.executeQuery();
             return parseResultSet(resultSet, t);
-        } catch (InstantiationException | IllegalAccessException | SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
             closeConnection(statement, resultSet);
@@ -145,7 +161,7 @@ public class BaseDao<T> implements BaseCrud<T> {
 //                 实例化一个要填充内容的对象
                 final T t = this.po.newInstance();
 //                 拿到一行的数据
-                final List<Object> data = getAllFieldName(po).stream().map(name -> {
+                final List<Object> data = allFieldName.stream().map(name -> {
                     Object o = null;
                     try {
                         o = resultSet.getObject(name);
@@ -154,19 +170,16 @@ public class BaseDao<T> implements BaseCrud<T> {
                     }
                     return o;
                 }).collect(Collectors.toList());
-                System.out.println(data);
-//                 获取类的所有属性
-                final Field[] fields = t.getClass().getDeclaredFields();
 //                 填充属性
-                for (int i = 0; i < fields.length; i++) {
-                    String name = fields[i].getName();
+                for (int i = 0; i < allField.size(); i++) {
+                    String name = allField.get(i).getName();
                     name = name.substring(0, 1).toUpperCase() + name.substring(1);
 //                     获取对应的set方法
-                    final Method method = t.getClass().getMethod("set" + name, fields[i].getType());
+                    final Method method = t.getClass().getMethod("set" + name, allField.get(i).getType());
 //                     拿到对应的值
                     Object o = data.get(i);
-//                     处理时间类型
-                    if (LocalDateTime.class.isAssignableFrom(o.getClass())) {
+//                     处理时间类型(目前是有问题的)
+                    if (null != o && LocalDateTime.class.isAssignableFrom(o.getClass())) {
                         o = Date.from(((LocalDateTime) o).atZone(ZoneId.systemDefault()).toInstant());
                     }
 //                    使用set方法注入值
@@ -187,6 +200,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             while (resultSet.next()) {
                 final T t = po.newInstance();
                 for (String s : data) {
+//                    下划线转驼峰
                     final String name = StringUtil.convertToLineHump(s);
                     final Field field = po.getDeclaredField(name.substring(0, 1).toLowerCase() + name.substring(1));
                     final Method method = t.getClass().getDeclaredMethod("set" + name, field.getType());
@@ -194,7 +208,7 @@ public class BaseDao<T> implements BaseCrud<T> {
                 }
                 list.add(t);
             }
-        } catch (SQLException | InstantiationException | IllegalAccessException | NoSuchFieldException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return list;
@@ -208,9 +222,9 @@ public class BaseDao<T> implements BaseCrud<T> {
         final StringBuilder sql = new StringBuilder();
         try {
             sql.append("SELECT ")
-                    .append(getTableField(po.newInstance()))
+                    .append(getTableField())
                     .append(" FROM ")
-                    .append(getTableName(po.newInstance()))
+                    .append(tableName)
                     .append(" WHERE ")
                     .append(getTablePrimaryKeyName())
                     .append("=")
@@ -220,7 +234,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             final List<T> list = parseResultSet(resultSet, po.newInstance());
             if (list.size() > 1) throw new RuntimeException("当前主键对应的值不止1个");
             return list.get(0);
-        } catch (InstantiationException | IllegalAccessException | SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
 //            关闭连接
@@ -236,7 +250,7 @@ public class BaseDao<T> implements BaseCrud<T> {
         PreparedStatement statement = null;
         try {
             sql.append("DELETE FROM ")
-                    .append(getTableName(po.newInstance()))
+                    .append(tableName)
                     .append(" WHERE ")
                     .append(getTablePrimaryKeyName())
                     .append("=")
@@ -247,7 +261,7 @@ public class BaseDao<T> implements BaseCrud<T> {
                 connection.commit();
                 return true;
             }
-        } catch (InstantiationException | IllegalAccessException | SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             try {
 //                回滚事务
@@ -267,12 +281,11 @@ public class BaseDao<T> implements BaseCrud<T> {
         final StringBuilder sql = new StringBuilder();
         PreparedStatement statement = null;
         try {
-            final Field primaryKey = getTablePrimaryKey();
             primaryKey.setAccessible(true);
             sql.append("UPDATE ")
-                    .append(getTableName(t))
+                    .append(tableName)
                     .append(" SET ")
-                    .append(getUpdateParams(t))
+                    .append(getUpdateParams())
                     .append(" WHERE ")
                     .append(getTablePrimaryKeyName())
                     .append("=")
@@ -284,7 +297,7 @@ public class BaseDao<T> implements BaseCrud<T> {
                 connection.commit();
                 return true;
             }
-        } catch (IllegalAccessException | SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             try {
                 connection.rollback();
@@ -317,9 +330,10 @@ public class BaseDao<T> implements BaseCrud<T> {
             if (params.equals("*")) {
                 return parseResultSet(resultSet, po.newInstance());
             } else {
+//                根据传入的参数解析
                 return parseResultSet(resultSet, po, params.split(","));
             }
-        } catch (SQLException | InstantiationException | IllegalAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
             closeConnection(statement, resultSet);
@@ -337,7 +351,7 @@ public class BaseDao<T> implements BaseCrud<T> {
                 connection.commit();
                 return true;
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             try {
                 connection.rollback();
@@ -351,23 +365,21 @@ public class BaseDao<T> implements BaseCrud<T> {
     }
 
     //    拼接更新的参数
-    private String getUpdateParams(T t) {
-        final List<String> fieldNames = getAllFieldName(t);
-        final Optional<String> reduce = fieldNames.stream().reduce((o, n) -> o + "=?, " + n);
+    private String getUpdateParams() {
+        final Optional<String> reduce = allFieldName.stream().reduce((o, n) -> o + "=?, " + n);
         final String params = reduce.orElse("");
         return "".equals(params) ? "" : params + "=?";
     }
 
     //    填充?的值
     private PreparedStatement getStatement(PreparedStatement statement, T t) {
-//        获取所有的属性
-        final List<Field> fields = getAllField(t);
-//        遍历属性
-        Utils.ListEach(fields, (field, index) -> {
+//        遍历当前类的属性
+        Utils.ListEach(allField, (field, index) -> {
             field.setAccessible(true);
             try {
+//                从坐标为1的地方开始填充数据
                 statement.setObject(index + 1, field.get(t));
-            } catch (SQLException | IllegalAccessException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 field.setAccessible(false);
@@ -377,28 +389,22 @@ public class BaseDao<T> implements BaseCrud<T> {
     }
 
     //    填充属性对应的?
-    private String getTableFieldValue(T t) {
-        final List<Field> fields = getAllField(t);
-        final String[] data = new String[fields.size()];
+    private String getTableFieldValue() {
+        final String[] data = new String[allField.size()];
         Arrays.fill(data, "?");
         return StringUtil.join(data, ",");
     }
 
     //    获取表的字段
-    private String getTableField(T t) {
+    private String getTableField() {
 //        获取类上的所有属性名字并且用,隔开
-        return StringUtil.join(getAllFieldName(t), ",");
-    }
-
-    //    获取类上的所有属性,并且转成List
-    private List<Field> getAllField(T t) {
-        return Arrays.asList(t.getClass().getDeclaredFields());
+        return StringUtil.join(allFieldName, ",");
     }
 
     //    获取类上所有属性的名字,并且转成List
-    private List<String> getAllFieldName(T t) {
+    private List<String> getAllFieldName() {
 //        优先使用注解上的值
-        return getAllField(t).stream().map(field -> {
+        return allField.stream().map(field -> {
             if (field.isAnnotationPresent(Col.class)) {
                 return field.getAnnotation(Col.class).name();
             }
@@ -409,7 +415,7 @@ public class BaseDao<T> implements BaseCrud<T> {
     //    获取表的主键
     private Field getTablePrimaryKey() {
         try {
-            final List<Field> primaryKeyList = getAllField(po.newInstance()).stream().filter(field -> {
+            final List<Field> primaryKeyList = allField.stream().filter(field -> {
                 if (field.isAnnotationPresent(Col.class)) {
                     return field.getAnnotation(Col.class).primaryKey();
                 }
@@ -419,7 +425,7 @@ public class BaseDao<T> implements BaseCrud<T> {
                 throw new RuntimeException("主键数量不能大于1");
             }
             return primaryKeyList.get(0);
-        } catch (InstantiationException | IllegalAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         throw new RuntimeException("没有找到主键,需要指定主键");
@@ -427,7 +433,7 @@ public class BaseDao<T> implements BaseCrud<T> {
 
     //    获取表的主键名字
     private String getTablePrimaryKeyName() {
-        final Field primaryKey = getTablePrimaryKey();
+//        优先使用注解里面的名字
         if (primaryKey.isAnnotationPresent(Col.class)) {
             return primaryKey.getAnnotation(Col.class).name();
         } else {
@@ -436,17 +442,17 @@ public class BaseDao<T> implements BaseCrud<T> {
     }
 
     //    获取表名
-    private String getTableName(T t) {
+    private String getTableName(Class<T> t) {
 //        有注解优先用注解中的值
-        if (t.getClass().isAnnotationPresent(Table.class)) {
-            final Table table = t.getClass().getAnnotation(Table.class);
+        if (t.isAnnotationPresent(Table.class)) {
+            final Table table = t.getAnnotation(Table.class);
             final String prefix = table.prefix();
             final String tableName = table.tableName();
             final String suffix = table.suffix();
             return prefix + tableName + suffix;
         }
 //        没有就是类名,驼峰转下划线格式
-        return StringUtil.convertToUnderline(t.getClass().getSimpleName());
+        return StringUtil.convertToUnderline(t.getSimpleName());
     }
 
     //    关闭连接
