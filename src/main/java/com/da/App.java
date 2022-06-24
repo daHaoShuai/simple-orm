@@ -23,14 +23,22 @@ public class App {
 
     public static void main(String[] args) {
         final User user = new User();
-//        user.setId(3);
-        user.setName("admin5");
-        user.setPass("admin6");
+        user.setId(15);
+        user.setName("admin15");
+        user.setPass("admin15");
         user.setTime(new Date(System.currentTimeMillis()));
         final UserDao userDao = new UserDao();
-//        final List<User> users = userDao.list();
+//        新增
+        System.out.println(userDao.add(user));
+//        获取表中所有的数据
+        final List<User> users = userDao.list();
+//        通过主键获取
         final User id = userDao.getById(11);
-        System.out.println(id);
+//        通过主键删除
+        System.out.println(userDao.deleteById(16));
+//        通过主键更新
+        System.out.println(userDao.updateById(user));
+//        关闭连接
         userDao.closeConnection();
     }
 }

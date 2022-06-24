@@ -1,8 +1,11 @@
 package com.da.orm;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 /**
  * @Author Da
@@ -17,14 +20,14 @@ import java.sql.SQLException;
  * @Time: 9:23
  */
 public class DBUtil {
-    private String username = "root";
-    private String password = "123456";
-    private String url = "jdbc:mysql://192.168.31.126:3306/demo?characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true";
-    private String driver = "com.mysql.cj.jdbc.Driver";
+    private String username;
+    private String password;
+    private String url;
+    private String driver;
     private Connection connection;
 
     public DBUtil() {
-        initConnect();
+        initConnect(0);
     }
 
     public DBUtil(String username, String password, String url, String driver) {
@@ -32,16 +35,26 @@ public class DBUtil {
         this.password = password;
         this.url = url;
         this.driver = driver;
-        initConnect();
+        initConnect(1);
     }
 
     //    初始化连接
-    private void initConnect() {
+    private void initConnect(int type) {
         try {
+            if (type == 0) {
+//              读取配置文件
+                final InputStream is = this.getClass().getClassLoader().getResourceAsStream("simple-orm.properties");
+                final Properties properties = new Properties();
+                properties.load(is);
+                this.username = properties.getProperty("username");
+                this.password = properties.getProperty("password");
+                this.url = properties.getProperty("url");
+                this.driver = properties.getProperty("driver");
+            }
             Class.forName(driver);
             connection = DriverManager.getConnection(url, username, password);
             System.out.println("数据库连接成功");
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (ClassNotFoundException | SQLException | IOException e) {
             System.out.println("数据库连接失败");
             e.printStackTrace();
         }

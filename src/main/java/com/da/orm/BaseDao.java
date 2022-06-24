@@ -11,12 +11,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -38,13 +40,9 @@ public class BaseDao<T> {
     public final Connection connection = dbUtil.getConnection();
     //    对应的实体类类型
     private final Class<T> po;
-    //    保存查询出来的实体类集合
-    private List<T> pos;
 
     public BaseDao(Class<T> po) {
         this.po = po;
-//        初始化时就查询一下数据库中所有的信息
-        this.pos = list();
     }
 
     //    关闭连接
@@ -73,13 +71,7 @@ public class BaseDao<T> {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
+            closeConnection(null, statement, null);
         }
         return false;
     }
@@ -88,7 +80,6 @@ public class BaseDao<T> {
     public List<T> list() {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
-        pos = new ArrayList<>();
         try {
 //            通过传入的实例获取信息
             final T po = this.po.newInstance();
@@ -100,85 +91,143 @@ public class BaseDao<T> {
             System.out.println(sql);
             statement = connection.prepareStatement(sql.toString());
             resultSet = statement.executeQuery();
+//            返回解析好的类型对象
+            return parseResultSet(resultSet, po);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+//            关闭连接
+            closeConnection(null, statement, resultSet);
+        }
+        throw new RuntimeException("没有查询到对应的信息");
+    }
+
+    //    解析查询出来的结果
+    private List<T> parseResultSet(ResultSet resultSet, T po) {
+        final List<T> list = new ArrayList<>();
+        try {
             while (resultSet.next()) {
-//                实例化一个要填充内容的对象
+//                 实例化一个要填充内容的对象
                 final T t = this.po.newInstance();
-                ResultSet finalResultSet = resultSet;
-//                拿到一行的数据
+//                 拿到一行的数据
                 final List<Object> data = getAllFieldName(po).stream().map(name -> {
                     Object o = null;
                     try {
-                        o = finalResultSet.getObject(name);
+                        o = resultSet.getObject(name);
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
                     return o;
                 }).collect(Collectors.toList());
-//                获取类的所有属性
+//                 获取类的所有属性
                 final Field[] fields = t.getClass().getDeclaredFields();
-//                填充属性
+//                 填充属性
                 for (int i = 0; i < fields.length; i++) {
                     String name = fields[i].getName();
                     name = name.substring(0, 1).toUpperCase() + name.substring(1);
-//                    获取对应的set方法
+//                     获取对应的set方法
                     final Method method = t.getClass().getMethod("set" + name, fields[i].getType());
-//                    拿到对应的值
+//                     拿到对应的值
                     Object o = data.get(i);
-//                    处理时间类型
+//                     处理时间类型
                     if (LocalDateTime.class.isAssignableFrom(o.getClass())) {
                         o = Date.from(((LocalDateTime) o).atZone(ZoneId.systemDefault()).toInstant());
                     }
+//                    使用set方法注入值
                     method.invoke(t, o);
                 }
-                pos.add(t);
+                list.add(t);
             }
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
-        return pos;
+        return list;
     }
 
-    //    通过id获取实体类
+    //    通过主键获取实体类
     public <O> T getById(O id) {
-//        获取一下所有的数据
-        if (pos == null || pos.size() == 0) {
-            throw new RuntimeException("没有从数据库中查到数据");
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
+        final StringBuilder sql = new StringBuilder();
+        try {
+            sql.append("SELECT ")
+                    .append(getTableField(po.newInstance()))
+                    .append(" FROM ")
+                    .append(getTableName(po.newInstance()))
+                    .append(" WHERE ")
+                    .append(getTablePrimaryKeyName())
+                    .append("=")
+                    .append(id);
+            System.out.println(sql);
+            statement = connection.prepareStatement(sql.toString());
+            resultSet = statement.executeQuery();
+            final List<T> list = parseResultSet(resultSet, po.newInstance());
+            if (list.size() > 1) throw new RuntimeException("当前主键对应的值不止1个");
+            return list.get(0);
+        } catch (InstantiationException | IllegalAccessException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+//            关闭连接
+            closeConnection(null, statement, resultSet);
         }
-//        获取主键属性
-        Field primaryKey = getTablePrimaryKey();
-//        过滤出主键对应的内容
-        final List<T> po = pos.stream().filter(t -> {
-            final Object o;
-            try {
-                final Field field = t.getClass().getDeclaredField(primaryKey.getName());
-                field.setAccessible(true);
-                o = field.get(t);
-                field.setAccessible(false);
-                return id == o;
-            } catch (IllegalAccessException | NoSuchFieldException e) {
-                e.printStackTrace();
-            }
-            return false;
-        }).collect(Collectors.toList());
-        if (po.size() > 1) {
-            throw new RuntimeException("获取到多个值,请仔细检查原因");
+        throw new RuntimeException("没有查到对应的信息");
+    }
+
+    //    通过主键删除
+    public <O> boolean deleteById(O id) {
+        final StringBuilder sql = new StringBuilder();
+        PreparedStatement statement = null;
+        try {
+            sql.append("DELETE FROM ")
+                    .append(getTableName(po.newInstance()))
+                    .append(" WHERE ")
+                    .append(getTablePrimaryKeyName())
+                    .append("=")
+                    .append(id);
+            System.out.println(sql);
+            statement = connection.prepareStatement(sql.toString());
+            return statement.executeUpdate() > 0;
+        } catch (InstantiationException | IllegalAccessException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeConnection(null, statement, null);
         }
-        return po.get(0);
+        return false;
+    }
+
+    //    通过实体类的主键更新
+    public boolean updateById(T t) {
+        final StringBuilder sql = new StringBuilder();
+        PreparedStatement statement = null;
+        try {
+            final Field primaryKey = getTablePrimaryKey();
+            primaryKey.setAccessible(true);
+            sql.append("UPDATE ")
+                    .append(getTableName(t))
+                    .append(" SET ")
+                    .append(getUpdateParams(t))
+                    .append(" WHERE ")
+                    .append(getTablePrimaryKeyName())
+                    .append("=")
+                    .append(primaryKey.get(t));
+            primaryKey.setAccessible(false);
+            System.out.println(sql);
+            statement = getStatement(connection.prepareStatement(sql.toString()), t);
+            return statement.executeUpdate() > 0;
+        } catch (IllegalAccessException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeConnection(null, statement, null);
+        }
+        return false;
+    }
+
+    //    拼接更新的参数
+    private String getUpdateParams(T t) {
+        final List<String> fieldNames = getAllFieldName(t);
+        final Optional<String> reduce = fieldNames.stream().reduce((o, n) -> o + "=?, " + n);
+        final String params = reduce.orElse("");
+        return "".equals(params) ? "" : params + "=?";
     }
 
     //    填充?的值
@@ -248,6 +297,16 @@ public class BaseDao<T> {
         throw new RuntimeException("没有找到主键,需要指定主键");
     }
 
+    //    获取表的主键名字
+    private String getTablePrimaryKeyName() {
+        final Field primaryKey = getTablePrimaryKey();
+        if (primaryKey.isAnnotationPresent(Col.class)) {
+            return primaryKey.getAnnotation(Col.class).name();
+        } else {
+            return StringUtil.convertToUnderline(primaryKey.getName());
+        }
+    }
+
     //    获取表名
     private String getTableName(T t) {
 //        有注解优先用注解中的值
@@ -260,5 +319,22 @@ public class BaseDao<T> {
         }
 //        没有就是类名,驼峰转下划线格式
         return StringUtil.convertToUnderline(t.getClass().getSimpleName());
+    }
+
+    //    关闭连接
+    private void closeConnection(Connection connection, Statement statement, ResultSet resultSet) {
+        try {
+            if (connection != null) {
+                connection.close();
+            }
+            if (statement != null) {
+                statement.close();
+            }
+            if (resultSet != null) {
+                resultSet.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
