@@ -43,6 +43,12 @@ public class BaseDao<T> {
 
     public BaseDao(Class<T> po) {
         this.po = po;
+        try {
+//            关闭自动提交
+            connection.setAutoCommit(false);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     //    关闭连接
@@ -67,9 +73,20 @@ public class BaseDao<T> {
 //            获取填充好值的 PreparedStatement
             statement = getStatement(connection.prepareStatement(sql.toString()), t);
             assert statement != null;
-            return statement.executeUpdate() > 0;
+            final int i = statement.executeUpdate();
+            if (i > 0) {
+//                提交事务
+                connection.commit();
+                return true;
+            }
         } catch (Exception e) {
             e.printStackTrace();
+            try {
+//                错误就回滚事务
+                connection.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
         } finally {
             closeConnection(statement, null);
         }
@@ -213,9 +230,19 @@ public class BaseDao<T> {
                     .append(id);
             System.out.println(sql);
             statement = connection.prepareStatement(sql.toString());
-            return statement.executeUpdate() > 0;
+            final int i = statement.executeUpdate();
+            if (i > 0) {
+                connection.commit();
+                return true;
+            }
         } catch (InstantiationException | IllegalAccessException | SQLException e) {
             e.printStackTrace();
+            try {
+//                回滚事务
+                connection.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
         } finally {
             closeConnection(statement, null);
         }
@@ -240,9 +267,18 @@ public class BaseDao<T> {
             primaryKey.setAccessible(false);
             System.out.println(sql);
             statement = getStatement(connection.prepareStatement(sql.toString()), t);
-            return statement.executeUpdate() > 0;
+            final int i = statement.executeUpdate();
+            if (i > 0) {
+                connection.commit();
+                return true;
+            }
         } catch (IllegalAccessException | SQLException e) {
             e.printStackTrace();
+            try {
+                connection.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
         } finally {
             closeConnection(statement, null);
         }
