@@ -1,4 +1,4 @@
-package com.da.orm;
+package com.da.orm.utils;
 
 import java.util.List;
 import java.util.Optional;
@@ -56,4 +56,5 @@ public class StringUtil {
         }
         return result.substring(0, result.lastIndexOf(str));
     }
+
 }

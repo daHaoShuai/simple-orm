@@ -22,4 +22,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Col {
     String name();
+
+    //    更新的时候通过主键更新
+    boolean primaryKey() default false;
 }

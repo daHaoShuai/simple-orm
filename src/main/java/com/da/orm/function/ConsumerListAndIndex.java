@@ -1,7 +1,4 @@
-package com.da.dao;
-
-import com.da.orm.BaseDao;
-import com.da.po.User;
+package com.da.orm.function;
 
 /**
  * @Author Da
@@ -12,11 +9,11 @@ import com.da.po.User;
  * 领导每天新想法，天天改，日日忙。
  * 相顾无言，惟有泪千行。
  * 每晚灯火阑珊处，夜难寐，又加班。
- * @Date: 2022-06-23
- * @Time: 15:54
+ * @Date: 2022-06-24
+ * @Time: 9:59
+ * 消费List和它对应的坐标
  */
-public class UserDao extends BaseDao<User> {
-    public UserDao() {
-        super(User.class);
-    }
+@FunctionalInterface
+public interface ConsumerListAndIndex<T> {
+    void each(T t, int i);
 }

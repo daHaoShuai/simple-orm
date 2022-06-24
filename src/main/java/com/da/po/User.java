@@ -1,6 +1,5 @@
 package com.da.po;
 
-import com.da.orm.BaseEntity;
 import com.da.orm.annotation.Col;
 import com.da.orm.annotation.Table;
 
@@ -19,12 +18,25 @@ import java.util.Date;
  * @Time: 11:54
  */
 @Table(tableName = "user")
-public class User extends BaseEntity {
+public class User {
+    @Col(name = "id", primaryKey = true)
+    private Integer id;
+
     @Col(name = "name")
     private String name;
+
     @Col(name = "pass")
     private String pass;
+
     private Date time;
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
     public Date getTime() {
         return time;
@@ -52,8 +64,9 @@ public class User extends BaseEntity {
 
     @Override
     public String toString() {
-        return super.toString() + "User{" +
-                "name='" + name + '\'' +
+        return "User{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
                 ", pass='" + pass + '\'' +
                 ", time=" + time +
                 '}';

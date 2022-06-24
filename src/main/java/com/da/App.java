@@ -2,13 +2,10 @@ package com.da;
 
 
 import com.da.dao.UserDao;
-import com.da.orm.BaseEntity;
-import com.da.orm.DBUtil;
-import com.da.orm.StringUtil;
 import com.da.po.User;
 
-import java.lang.reflect.Field;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @Author Da
@@ -26,12 +23,14 @@ public class App {
 
     public static void main(String[] args) {
         final User user = new User();
-        user.setName("admin2");
-        user.setPass("admin2");
+//        user.setId(3);
+        user.setName("admin5");
+        user.setPass("admin6");
         user.setTime(new Date(System.currentTimeMillis()));
         final UserDao userDao = new UserDao();
-        final boolean add = userDao.add(user);
-        System.out.println(add);
+//        final List<User> users = userDao.list();
+        final User id = userDao.getById(11);
+        System.out.println(id);
         userDao.closeConnection();
     }
 }
