@@ -22,11 +22,11 @@ public class App {
     public static void main(String[] args) {
         final UserDao userDao = new UserDao();
 //        执行sql语句查询信息
-        final List<User> list = userDao.query("select * from user where id = 1");
+        final List<User> list = userDao.query("select id,name,pass from user where pass='bb' and id=19");
         System.out.println(list);
 //        执行增删改操作
-        System.out.println(userDao.exec("insert into user(name,pass) values('aa','bb')"));
-        userDao.closeConnection();
+//        System.out.println(userDao.exec("insert into user(name,pass) values('aa','bb')"));
+//        userDao.closeConnection();
     }
 
 }

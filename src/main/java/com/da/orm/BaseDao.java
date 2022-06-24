@@ -6,6 +6,7 @@ import com.da.orm.utils.StringUtil;
 import com.da.orm.utils.Utils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -136,7 +137,7 @@ public class BaseDao<T> implements BaseCrud<T> {
         throw new RuntimeException("没有找到当前分页的信息");
     }
 
-    //    解析查询出来的结果
+    //    解析查询出来的结果(全部的字段)
     private List<T> parseResultSet(ResultSet resultSet, T po) {
         final List<T> list = new ArrayList<>();
         try {
@@ -153,6 +154,7 @@ public class BaseDao<T> implements BaseCrud<T> {
                     }
                     return o;
                 }).collect(Collectors.toList());
+                System.out.println(data);
 //                 获取类的所有属性
                 final Field[] fields = t.getClass().getDeclaredFields();
 //                 填充属性
@@ -173,6 +175,26 @@ public class BaseDao<T> implements BaseCrud<T> {
                 list.add(t);
             }
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    //    解析查询出来的结果(指定的字段)
+    private List<T> parseResultSet(ResultSet resultSet, Class<T> po, String[] data) {
+        final List<T> list = new ArrayList<>();
+        try {
+            while (resultSet.next()) {
+                final T t = po.newInstance();
+                for (String s : data) {
+                    final String name = StringUtil.convertToLineHump(s);
+                    final Field field = po.getDeclaredField(name.substring(0, 1).toLowerCase() + name.substring(1));
+                    final Method method = t.getClass().getDeclaredMethod("set" + name, field.getType());
+                    method.invoke(t, resultSet.getObject(s));
+                }
+                list.add(t);
+            }
+        } catch (SQLException | InstantiationException | IllegalAccessException | NoSuchFieldException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }
         return list;
@@ -278,13 +300,25 @@ public class BaseDao<T> implements BaseCrud<T> {
     //    通过自定义的sql语句查询
     @Override
     public List<T> query(String sql) {
-        System.out.println(sql);
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         try {
+            if (sql.contains("select")) {
+                sql = sql.replace("select", "SELECT");
+            }
+            if (sql.contains("from")) {
+                sql = sql.replace("from", "FROM");
+            }
             statement = connection.prepareStatement(sql);
             resultSet = statement.executeQuery();
-            return parseResultSet(resultSet, po.newInstance());
+//            获取参数
+            final String params = sql.substring(sql.indexOf("SELECT") + 6, sql.indexOf("FROM")).trim();
+//            *是查全部,所有直接解析就行
+            if (params.equals("*")) {
+                return parseResultSet(resultSet, po.newInstance());
+            } else {
+                return parseResultSet(resultSet, po, params.split(","));
+            }
         } catch (SQLException | InstantiationException | IllegalAccessException e) {
             e.printStackTrace();
         } finally {
