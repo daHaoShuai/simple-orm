@@ -1,6 +1,6 @@
 package com.da;
 
-import com.da.orm.utils.Sql;
+import com.da.dao.UserDao;
 import com.da.po.User;
 
 /**
@@ -18,48 +18,18 @@ import com.da.po.User;
 public class App {
 
     public static void main(String[] args) {
-        final Sql sql = new Sql(User.class);
-
-        final String s = sql.select().build();
-        System.out.println(s);
-
-        final String s1 = sql.select("name", "pass").build();
-        System.out.println(s1);
-
-        final String s2 = sql.insert().build();
-        System.out.println(s2);
-
-        final String s3 = sql.insert("name", "pass").build();
-        System.out.println(s3);
-
-        final String s4 = sql.update()
-                .where()
-                .eq("name", "aa")
-                .and()
-                .ne("a1", "a")
-                .and()
-                .gt("a3", 1)
-                .and()
-                .lt("a4", 3)
-                .build();
-        System.out.println(s4);
-
-        final String s5 = sql.update("name", "pass")
-                .where()
-                .eq("pass", "bb")
-                .and()
-                .eq("name", "aa")
-                .and()
-                .le("a", 10)
-                .build();
-        System.out.println(s5);
-
-        final String s6 = sql.delete()
-                .where()
-                .eq("name", "aa")
-                .build();
-        System.out.println(s6);
-
+        final UserDao userDao = new UserDao();
+        final User user = new User();
+//        user.setId(30);
+        user.setName("aaaaa");
+        user.setPass("aaaa1");
+//        System.out.println(userDao.add(user));
+//        userDao.list().forEach(System.out::println);
+//        userDao.pages(1, 2).forEach(System.out::println);
+//        System.out.println(userDao.getById(1));
+        System.out.println(userDao.deleteById(33));
+//        System.out.println(userDao.updateById(user));
+        userDao.closeConnection();
     }
 
 }

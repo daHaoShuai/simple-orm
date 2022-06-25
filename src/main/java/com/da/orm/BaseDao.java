@@ -1,7 +1,6 @@
 package com.da.orm;
 
-import com.da.orm.annotation.Col;
-import com.da.orm.annotation.Table;
+import com.da.orm.utils.Sql;
 import com.da.orm.utils.StringUtil;
 import com.da.orm.utils.Utils;
 
@@ -15,10 +14,8 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -38,27 +35,30 @@ public class BaseDao<T> implements BaseCrud<T> {
     //    实例化数据库连接工具类
     private final DBUtil dbUtil;
     //    获取数据库连接
-    public final Connection connection;
+    private final Connection connection;
+    //    sql语句构建
+    private final Sql sqlBuild;
     //    对应的实体类类型
     private final Class<T> po;
     //    当前实体类上所有的属性
     private final List<Field> allField;
     //    对应表的字段名字
     private final List<String> allFieldName;
-    //    实体类对应的表名
-    private final String tableName;
     //    主键属性
     private final Field primaryKey;
+    //    主键名字
+    private final String primaryKeyName;
 
     //    初始化信息
     public BaseDao(Class<T> po) {
         this.dbUtil = new DBUtil();
         connection = dbUtil.getConnection();
         this.po = po;
-        allField = Arrays.asList(po.getDeclaredFields());
-        allFieldName = getAllFieldName();
-        tableName = getTableName(po);
-        primaryKey = getTablePrimaryKey();
+        this.sqlBuild = new Sql(po);
+        allField = sqlBuild.getAllField();
+        allFieldName = sqlBuild.getAllTableFieldName();
+        primaryKey = sqlBuild.getTablePrimaryKey();
+        primaryKeyName = sqlBuild.getTablePrimaryKeyName();
         try {
 //            关闭自动提交
             connection.setAutoCommit(false);
@@ -74,13 +74,19 @@ public class BaseDao<T> implements BaseCrud<T> {
         System.out.println("数据库连接关闭");
     }
 
+    //    获取数据库的直接操作工具类
+    public DBUtil getDbUtil() {
+        return dbUtil;
+    }
+
     //    新增数据
     @Override
     public boolean add(T t) {
         PreparedStatement statement = null;
         try {
+//            构建插入语句
+            String sql = sqlBuild.insert().build();
 //            获取填充好值的 PreparedStatement
-            String sql = "INSERT INTO " + tableName + " (" + getTableField() + ") VALUES (" + getTableFieldValue() + ")";
             statement = getStatement(connection.prepareStatement(sql), t);
             assert statement != null;
             final int i = statement.executeUpdate();
@@ -111,12 +117,12 @@ public class BaseDao<T> implements BaseCrud<T> {
         try {
 //            通过传入的实例获取信息
             final T po = this.po.newInstance();
-            String sql = "SELECT " + getTableField() + " FROM " + tableName;
-            System.out.println(sql);
+//            构建查询语句
+            String sql = sqlBuild.select().build();
             statement = connection.prepareStatement(sql);
             resultSet = statement.executeQuery();
 //            返回解析好的类型对象
-            return parseResultSet(resultSet, po);
+            return parseResultSet(resultSet);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -129,22 +135,15 @@ public class BaseDao<T> implements BaseCrud<T> {
     //    分页查询
     @Override
     public List<T> pages(int current, int pageSize) {
-        final StringBuilder sql = new StringBuilder();
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         try {
             final T t = po.newInstance();
-            sql.append("SELECT ")
-                    .append(getTableField())
-                    .append(" FROM ")
-                    .append(tableName)
-                    .append(" LIMIT ")
-                    .append(pageSize)
-                    .append(" OFFSET ")
-                    .append(pageSize * (current - 1));
-            statement = connection.prepareStatement(sql.toString());
+//            构建分页查询语句
+            String sql = sqlBuild.select().limit().and(pageSize).offset().and(pageSize * (current - 1)).build();
+            statement = connection.prepareStatement(sql);
             resultSet = statement.executeQuery();
-            return parseResultSet(resultSet, t);
+            return parseResultSet(resultSet);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -154,7 +153,7 @@ public class BaseDao<T> implements BaseCrud<T> {
     }
 
     //    解析查询出来的结果(全部的字段)
-    private List<T> parseResultSet(ResultSet resultSet, T po) {
+    private List<T> parseResultSet(ResultSet resultSet) {
         final List<T> list = new ArrayList<>();
         try {
             while (resultSet.next()) {
@@ -219,19 +218,12 @@ public class BaseDao<T> implements BaseCrud<T> {
     public <O> T getById(O id) {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
-        final StringBuilder sql = new StringBuilder();
         try {
-            sql.append("SELECT ")
-                    .append(getTableField())
-                    .append(" FROM ")
-                    .append(tableName)
-                    .append(" WHERE ")
-                    .append(getTablePrimaryKeyName())
-                    .append("=")
-                    .append(id);
-            statement = connection.prepareStatement(sql.toString());
+//            拼接通过主键来获取信息的语句
+            String sql = sqlBuild.select().where().eq(primaryKeyName, id).build();
+            statement = connection.prepareStatement(sql);
             resultSet = statement.executeQuery();
-            final List<T> list = parseResultSet(resultSet, po.newInstance());
+            final List<T> list = parseResultSet(resultSet);
             if (list.size() > 1) throw new RuntimeException("当前主键对应的值不止1个");
             return list.get(0);
         } catch (Exception e) {
@@ -246,16 +238,11 @@ public class BaseDao<T> implements BaseCrud<T> {
     //    通过主键删除
     @Override
     public <O> boolean deleteById(O id) {
-        final StringBuilder sql = new StringBuilder();
         PreparedStatement statement = null;
         try {
-            sql.append("DELETE FROM ")
-                    .append(tableName)
-                    .append(" WHERE ")
-                    .append(getTablePrimaryKeyName())
-                    .append("=")
-                    .append(id);
-            statement = connection.prepareStatement(sql.toString());
+//            构建通过主键删除的语句
+            String sql = sqlBuild.delete().where().eq(primaryKeyName, id).build();
+            statement = connection.prepareStatement(sql);
             final int i = statement.executeUpdate();
             if (i > 0) {
                 connection.commit();
@@ -278,20 +265,13 @@ public class BaseDao<T> implements BaseCrud<T> {
     //    通过实体类的主键更新
     @Override
     public boolean updateById(T t) {
-        final StringBuilder sql = new StringBuilder();
         PreparedStatement statement = null;
         try {
             primaryKey.setAccessible(true);
-            sql.append("UPDATE ")
-                    .append(tableName)
-                    .append(" SET ")
-                    .append(getUpdateParams())
-                    .append(" WHERE ")
-                    .append(getTablePrimaryKeyName())
-                    .append("=")
-                    .append(primaryKey.get(t));
+//            构建通过主键更新的语句
+            String sql = sqlBuild.update().where().eq(primaryKeyName, primaryKey.get(t)).build();
             primaryKey.setAccessible(false);
-            statement = getStatement(connection.prepareStatement(sql.toString()), t);
+            statement = getStatement(connection.prepareStatement(sql), t);
             final int i = statement.executeUpdate();
             if (i > 0) {
                 connection.commit();
@@ -328,7 +308,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             final String params = sql.substring(sql.indexOf("SELECT") + 6, sql.indexOf("FROM")).trim();
 //            *是查全部,所有直接解析就行
             if (params.equals("*")) {
-                return parseResultSet(resultSet, po.newInstance());
+                return parseResultSet(resultSet);
             } else {
 //                根据传入的参数解析
                 return parseResultSet(resultSet, po, params.split(","));
@@ -364,13 +344,6 @@ public class BaseDao<T> implements BaseCrud<T> {
         return false;
     }
 
-    //    拼接更新的参数
-    private String getUpdateParams() {
-        final Optional<String> reduce = allFieldName.stream().reduce((o, n) -> o + "=?, " + n);
-        final String params = reduce.orElse("");
-        return "".equals(params) ? "" : params + "=?";
-    }
-
     //    填充?的值
     private PreparedStatement getStatement(PreparedStatement statement, T t) {
 //        遍历当前类的属性
@@ -386,73 +359,6 @@ public class BaseDao<T> implements BaseCrud<T> {
             }
         });
         return statement;
-    }
-
-    //    填充属性对应的?
-    private String getTableFieldValue() {
-        final String[] data = new String[allField.size()];
-        Arrays.fill(data, "?");
-        return StringUtil.join(data, ",");
-    }
-
-    //    获取表的字段
-    private String getTableField() {
-//        获取类上的所有属性名字并且用,隔开
-        return StringUtil.join(allFieldName, ",");
-    }
-
-    //    获取类上所有属性的名字,并且转成List
-    private List<String> getAllFieldName() {
-//        优先使用注解上的值
-        return allField.stream().map(field -> {
-            if (field.isAnnotationPresent(Col.class)) {
-                return field.getAnnotation(Col.class).name();
-            }
-            return field.getName();
-        }).collect(Collectors.toList());
-    }
-
-    //    获取表的主键
-    private Field getTablePrimaryKey() {
-        try {
-            final List<Field> primaryKeyList = allField.stream().filter(field -> {
-                if (field.isAnnotationPresent(Col.class)) {
-                    return field.getAnnotation(Col.class).primaryKey();
-                }
-                return false;
-            }).collect(Collectors.toList());
-            if (primaryKeyList.size() > 1) {
-                throw new RuntimeException("主键数量不能大于1");
-            }
-            return primaryKeyList.get(0);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        throw new RuntimeException("没有找到主键,需要指定主键");
-    }
-
-    //    获取表的主键名字
-    private String getTablePrimaryKeyName() {
-//        优先使用注解里面的名字
-        if (primaryKey.isAnnotationPresent(Col.class)) {
-            return primaryKey.getAnnotation(Col.class).name();
-        } else {
-            return StringUtil.convertToUnderline(primaryKey.getName());
-        }
-    }
-
-    //    获取表名
-    private String getTableName(Class<T> t) {
-//        有注解优先用注解中的值
-        if (t.isAnnotationPresent(Table.class)) {
-            final Table table = t.getAnnotation(Table.class);
-            final String prefix = table.prefix();
-            final String tableName = table.tableName();
-            final String suffix = table.suffix();
-            return prefix + tableName + suffix;
-        }
-//        没有就是类名,驼峰转下划线格式
-        return StringUtil.convertToUnderline(t.getSimpleName());
     }
 
     //    关闭连接

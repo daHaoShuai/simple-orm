@@ -53,6 +53,47 @@ public class Sql {
         this.allTableFieldName = getAllTableFieldName(this.allField);
     }
 
+    //    获取表的主键
+    public Field getTablePrimaryKey() {
+        try {
+            final List<Field> primaryKeyList = allField.stream().filter(field -> {
+                if (field.isAnnotationPresent(Col.class)) {
+                    return field.getAnnotation(Col.class).primaryKey();
+                }
+                return false;
+            }).collect(Collectors.toList());
+            if (primaryKeyList.size() > 1) {
+                throw new RuntimeException("主键数量不能大于1");
+            }
+            return primaryKeyList.get(0);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        throw new RuntimeException("没有找到主键,需要指定主键");
+    }
+
+    //    获取表的主键名字
+    public String getTablePrimaryKeyName() {
+//        优先使用注解里面的名字
+        if (getTablePrimaryKey().isAnnotationPresent(Col.class)) {
+            return getTablePrimaryKey().getAnnotation(Col.class).name();
+        } else {
+            return StringUtil.convertToUnderline(getTablePrimaryKey().getName());
+        }
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public List<Field> getAllField() {
+        return allField;
+    }
+
+    public List<String> getAllTableFieldName() {
+        return allTableFieldName;
+    }
+
     //    拼接查询语句
     public Sql select() {
         clearOldSql();
@@ -108,6 +149,24 @@ public class Sql {
     //    拼接 and
     public Sql and() {
         this.sql += " AND ";
+        return this;
+    }
+
+    //    直接接大段语句
+    public Sql and(Object params) {
+        this.sql += params;
+        return this;
+    }
+
+    //    拼接limit
+    public Sql limit() {
+        this.sql += " LIMIT ";
+        return this;
+    }
+
+    //    拼接offset
+    public Sql offset() {
+        this.sql += " OFFSET ";
         return this;
     }
 
