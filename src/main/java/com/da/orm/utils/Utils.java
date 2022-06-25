@@ -2,7 +2,6 @@ package com.da.orm.utils;
 
 import com.da.orm.function.ConsumerListAndIndex;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +17,7 @@ import java.util.List;
  * 每晚灯火阑珊处，夜难寐，又加班。
  * @Date: 2022-06-24
  * @Time: 10:03
+ * 工具类
  */
 public class Utils {
 
@@ -32,4 +32,5 @@ public class Utils {
     public static <T> List<Field> getAllField(Class<T> t) {
         return Arrays.asList(t.getDeclaredFields());
     }
+
 }

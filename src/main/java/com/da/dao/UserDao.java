@@ -1,6 +1,6 @@
 package com.da.dao;
 
-import com.da.orm.BaseDao;
+import com.da.orm.core.BaseDao;
 import com.da.po.User;
 
 import java.util.List;

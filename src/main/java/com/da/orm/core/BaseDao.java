@@ -1,6 +1,6 @@
-package com.da.orm;
+package com.da.orm.core;
 
-import com.da.orm.utils.Sql;
+import com.da.orm.utils.DBUtil;
 import com.da.orm.utils.StringUtil;
 import com.da.orm.utils.Utils;
 
@@ -11,10 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,8 +67,7 @@ public class BaseDao<T> implements BaseCrud<T> {
     //    关闭连接
     @Override
     public void closeConnection() {
-        dbUtil.closeConnection();
-        System.out.println("数据库连接关闭");
+        dbUtil.closeConnection(connection);
     }
 
     //    获取数据库的直接操作工具类

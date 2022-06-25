@@ -1,9 +1,16 @@
 package com.da;
 
-import com.da.dao.UserDao;
-import com.da.orm.BaseCrud;
-import com.da.orm.BaseDao;
+import com.da.orm.core.BaseDao;
+import com.da.orm.core.DBConfig;
 import com.da.po.User;
+
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.IntStream;
 
 /**
  * @Author Da
@@ -20,10 +27,9 @@ import com.da.po.User;
 public class App {
 
     public static void main(String[] args) {
-        final UserDao userDao = new UserDao();
-//        使用自己拓展的方法
-        final User name = userDao.getUserByName("a1");
-        System.out.println(name);
+        final BaseDao<User> dao = new BaseDao<>(User.class);
+        dao.list().forEach(System.out::println);
+//        dao.closeConnection();
     }
 
 }

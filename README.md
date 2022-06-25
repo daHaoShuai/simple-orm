@@ -89,8 +89,8 @@ public class User {
 直接使用BaseDao
 
 ```java
-import com.da.orm.BaseCrud;
-import com.da.orm.BaseDao;
+import com.da.orm.core.BaseCrud;
+import com.da.orm.core.BaseDao;
 import com.da.po.User;
 
 public class App {
@@ -107,7 +107,7 @@ public class App {
 继承BaseDao获得基础的增删改查能力
 
 ```java
-import com.da.orm.BaseDao;
+import com.da.orm.core.BaseDao;
 import com.da.po.User;
 
 import java.util.List;
@@ -180,7 +180,7 @@ public class App {
 简单的用代码拼接sql语句
 
 ```java
-import com.da.orm.utils.Sql;
+import com.da.orm.core.Sql;
 import com.da.po.User;
 
 public class App {

@@ -1,4 +1,4 @@
-package com.da.orm;
+package com.da.orm.core;
 
 import java.util.List;
 

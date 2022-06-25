@@ -1,7 +1,9 @@
-package com.da.orm.utils;
+package com.da.orm.core;
 
 import com.da.orm.annotation.Col;
 import com.da.orm.annotation.Table;
+import com.da.orm.utils.StringUtil;
+import com.da.orm.utils.Utils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
