@@ -2,6 +2,9 @@ package com.da.orm.utils;
 
 import com.da.orm.function.ConsumerListAndIndex;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -25,4 +28,8 @@ public class Utils {
         }
     }
 
+    //    获取类的所有属性,并且转成list
+    public static <T> List<Field> getAllField(Class<T> t) {
+        return Arrays.asList(t.getDeclaredFields());
+    }
 }

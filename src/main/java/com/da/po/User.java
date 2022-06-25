@@ -17,7 +17,7 @@ import java.util.Date;
  * @Date: 2022-06-23
  * @Time: 11:54
  */
-@Table(tableName = "user")
+@Table(tableName = "user1")
 public class User {
     @Col(name = "id", primaryKey = true)
     private Integer id;

@@ -24,8 +24,6 @@ driver=com.mysql.cj.jdbc.Driver
 设置实体类
 
 ```java
-package com.da.po;
-
 import com.da.orm.annotation.Col;
 import com.da.orm.annotation.Table;
 
@@ -91,8 +89,6 @@ public class User {
 继承BaseDao获得基础的增删改查能力
 
 ```java
-package com.da.dao;
-
 import com.da.orm.BaseDao;
 import com.da.po.User;
 
@@ -106,8 +102,6 @@ public class UserDao extends BaseDao<User> {
 增删改查
 
 ```java
-package com.da;
-
 import com.da.dao.UserDao;
 import com.da.po.User;
 
@@ -145,5 +139,60 @@ public class App {
 //        关闭连接
         userDao.closeConnection();
     }
+}
+```
+
+简单的用代码拼接sql语句
+```java
+import com.da.orm.utils.Sql;
+import com.da.po.User;
+
+public class App {
+
+    public static void main(String[] args) {
+        final Sql sql = new Sql(User.class);
+
+        final String s = sql.select().build();
+        System.out.println(s);
+
+        final String s1 = sql.select("name", "pass").build();
+        System.out.println(s1);
+
+        final String s2 = sql.insert().build();
+        System.out.println(s2);
+
+        final String s3 = sql.insert("name", "pass").build();
+        System.out.println(s3);
+
+        final String s4 = sql.update()
+                .where()
+                .eq("name", "aa")
+                .and()
+                .ne("a1", "a")
+                .and()
+                .gt("a3", 1)
+                .and()
+                .lt("a4", 3)
+                .build();
+        System.out.println(s4);
+
+        final String s5 = sql.update("name", "pass")
+                .where()
+                .eq("pass", "bb")
+                .and()
+                .eq("name", "aa")
+                .and()
+                .le("a", 10)
+                .build();
+        System.out.println(s5);
+
+        final String s6 = sql.delete()
+                .where()
+                .eq("name", "aa")
+                .build();
+        System.out.println(s6);
+
+    }
+
 }
 ```
