@@ -3,6 +3,8 @@ package com.da.dao;
 import com.da.orm.BaseDao;
 import com.da.po.User;
 
+import java.util.List;
+
 /**
  * @Author Da
  * @Description: <br/>
@@ -18,5 +20,17 @@ import com.da.po.User;
 public class UserDao extends BaseDao<User> {
     public UserDao() {
         super(User.class);
+    }
+
+    //    (自己扩展方法)通过name获取
+    public User getUserByName(String name) {
+//        构建查询sql
+        final String sql = this.getSqlBuild().select().where().eq("name", "'" + name + "'").build();
+//        使用query方法解析查询语句
+        final List<User> users = this.query(sql);
+        if (users.size() > 1) {
+            throw new RuntimeException("查出的用户name为" + name + "的不止一个");
+        }
+        return users.get(0);
     }
 }

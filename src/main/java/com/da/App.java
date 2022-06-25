@@ -1,6 +1,8 @@
 package com.da;
 
 import com.da.dao.UserDao;
+import com.da.orm.BaseCrud;
+import com.da.orm.BaseDao;
 import com.da.po.User;
 
 /**
@@ -19,17 +21,9 @@ public class App {
 
     public static void main(String[] args) {
         final UserDao userDao = new UserDao();
-        final User user = new User();
-//        user.setId(30);
-        user.setName("aaaaa");
-        user.setPass("aaaa1");
-//        System.out.println(userDao.add(user));
-//        userDao.list().forEach(System.out::println);
-//        userDao.pages(1, 2).forEach(System.out::println);
-//        System.out.println(userDao.getById(1));
-        System.out.println(userDao.deleteById(33));
-//        System.out.println(userDao.updateById(user));
-        userDao.closeConnection();
+//        使用自己拓展的方法
+        final User name = userDao.getUserByName("a1");
+        System.out.println(name);
     }
 
 }

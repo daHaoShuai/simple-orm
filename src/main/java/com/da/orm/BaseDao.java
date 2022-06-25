@@ -79,6 +79,11 @@ public class BaseDao<T> implements BaseCrud<T> {
         return dbUtil;
     }
 
+    //    获取sql语句构建器
+    public Sql getSqlBuild() {
+        return this.sqlBuild;
+    }
+
     //    新增数据
     @Override
     public boolean add(T t) {
@@ -115,8 +120,6 @@ public class BaseDao<T> implements BaseCrud<T> {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         try {
-//            通过传入的实例获取信息
-            final T po = this.po.newInstance();
 //            构建查询语句
             String sql = sqlBuild.select().build();
             statement = connection.prepareStatement(sql);
@@ -138,8 +141,7 @@ public class BaseDao<T> implements BaseCrud<T> {
         PreparedStatement statement = null;
         ResultSet resultSet = null;
         try {
-            final T t = po.newInstance();
-//            构建分页查询语句
+            //            构建分页查询语句
             String sql = sqlBuild.select().limit().and(pageSize).offset().and(pageSize * (current - 1)).build();
             statement = connection.prepareStatement(sql);
             resultSet = statement.executeQuery();
@@ -175,12 +177,8 @@ public class BaseDao<T> implements BaseCrud<T> {
                     name = name.substring(0, 1).toUpperCase() + name.substring(1);
 //                     获取对应的set方法
                     final Method method = t.getClass().getMethod("set" + name, allField.get(i).getType());
-//                     拿到对应的值
+//                     拿到对应的值,实体数据类型必须对应数据库中的类型
                     Object o = data.get(i);
-//                     处理时间类型(目前是有问题的)
-                    if (null != o && LocalDateTime.class.isAssignableFrom(o.getClass())) {
-                        o = Date.from(((LocalDateTime) o).atZone(ZoneId.systemDefault()).toInstant());
-                    }
 //                    使用set方法注入值
                     method.invoke(t, o);
                 }

@@ -21,13 +21,13 @@ url=jdbc:mysql://192.168.31.126:3306/demo?characterEncoding=utf8&useSSL=false&se
 driver=com.mysql.cj.jdbc.Driver
 ```
 
-设置实体类
+设置实体类(实体类的属性类型必须要跟数据库中的类型一致,不然可能会报错)
 
 ```java
 import com.da.orm.annotation.Col;
 import com.da.orm.annotation.Table;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Table(tableName = "user")
 public class User {
@@ -40,7 +40,7 @@ public class User {
     @Col(name = "pass")
     private String pass;
 
-    private Date time;
+    private LocalDateTime time;
 
     public Integer getId() {
         return id;
@@ -50,11 +50,11 @@ public class User {
         this.id = id;
     }
 
-    public Date getTime() {
+    public LocalDateTime getTime() {
         return time;
     }
 
-    public void setTime(Date time) {
+    public void setTime(LocalDateTime time) {
         this.time = time;
     }
 
@@ -86,15 +86,47 @@ public class User {
 }
 ```
 
+直接使用BaseDao
+
+```java
+import com.da.orm.BaseCrud;
+import com.da.orm.BaseDao;
+import com.da.po.User;
+
+public class App {
+
+    public static void main(String[] args) {
+        final BaseCrud<User> dao = new BaseDao<>(User.class);
+        System.out.println(dao.getById(2));
+        dao.closeConnection();
+    }
+
+}
+```
+
 继承BaseDao获得基础的增删改查能力
 
 ```java
 import com.da.orm.BaseDao;
 import com.da.po.User;
 
+import java.util.List;
+
 public class UserDao extends BaseDao<User> {
     public UserDao() {
         super(User.class);
+    }
+
+    //    (自己扩展方法)通过name获取
+    public User getUserByName(String name) {
+//        构建查询sql
+        final String sql = this.getSqlBuild().select().where().eq("name", "'" + name + "'").build();
+//        使用query方法解析查询语句
+        final List<User> users = this.query(sql);
+        if (users.size() > 1) {
+            throw new RuntimeException("查出的用户name为" + name + "的不止一个");
+        }
+        return users.get(0);
     }
 }
 ```
@@ -115,7 +147,7 @@ public class App {
         user.setId(15);
         user.setName("admin15");
         user.setPass("admin15");
-        user.setTime(new Date(System.currentTimeMillis()));
+        user.setTime(LocalDateTime.now());
         final UserDao userDao = new UserDao();
 //        新增
         System.out.println(userDao.add(user));
@@ -136,6 +168,9 @@ public class App {
 //        执行增删改操作
         System.out.println(userDao.exec("insert into user(name,pass) values('aa','bb')"));
         System.out.println(userDao.exec("delete from user where name='aa'"));
+//        使用自己拓展的方法
+        final User name = userDao.getUserByName("a1");
+        System.out.println(name);
 //        关闭连接
         userDao.closeConnection();
     }
@@ -143,6 +178,7 @@ public class App {
 ```
 
 简单的用代码拼接sql语句
+
 ```java
 import com.da.orm.utils.Sql;
 import com.da.po.User;
@@ -192,6 +228,14 @@ public class App {
                 .build();
         System.out.println(s6);
 
+//      构建分页查询语句
+        String s7 = sqlBuild.select()
+                .limit()
+                .and(当前页数)
+                .offset()
+                .and(每页条数 * (当前页数 - 1))
+                .build();
+        System.out.println(s7);
     }
 
 }
