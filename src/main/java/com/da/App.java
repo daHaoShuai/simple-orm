@@ -1,16 +1,7 @@
 package com.da;
 
 import com.da.orm.core.BaseDao;
-import com.da.orm.core.DBConfig;
 import com.da.po.User;
-
-import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.IntStream;
 
 /**
  * @Author Da
@@ -29,7 +20,7 @@ public class App {
     public static void main(String[] args) {
         final BaseDao<User> dao = new BaseDao<>(User.class);
         dao.list().forEach(System.out::println);
-//        dao.closeConnection();
+        System.out.println(dao.getConnection());
     }
 
 }

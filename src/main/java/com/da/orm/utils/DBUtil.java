@@ -4,7 +4,6 @@ import com.da.orm.core.ConnectionPoolImpl;
 import com.da.orm.core.DBConfig;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 
 /**
  * @Author Da
@@ -20,11 +19,22 @@ import java.sql.SQLException;
  * 数据库连接工具类
  */
 public class DBUtil {
+
+    private static DBUtil instance = null;
+
     //    连接池
     private ConnectionPoolImpl connectionPool;
 
-    public DBUtil() {
+    private DBUtil() {
         initConnect();
+    }
+
+    //    单例模式,只初始化连接一次数据库
+    public static DBUtil getInstance() {
+        if (null == instance) {
+            instance = new DBUtil();
+        }
+        return instance;
     }
 
     //    数据库连接配置信息

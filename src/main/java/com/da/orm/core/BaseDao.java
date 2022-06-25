@@ -48,7 +48,7 @@ public class BaseDao<T> implements BaseCrud<T> {
 
     //    初始化信息
     public BaseDao(Class<T> po) {
-        this.dbUtil = new DBUtil();
+        this.dbUtil = DBUtil.getInstance();
         connection = dbUtil.getConnection();
         this.po = po;
         this.sqlBuild = new Sql(po);
@@ -64,12 +64,6 @@ public class BaseDao<T> implements BaseCrud<T> {
         }
     }
 
-    //    关闭连接
-    @Override
-    public void closeConnection() {
-        dbUtil.closeConnection(connection);
-    }
-
     //    获取数据库的直接操作工具类
     public DBUtil getDbUtil() {
         return dbUtil;
@@ -78,6 +72,11 @@ public class BaseDao<T> implements BaseCrud<T> {
     //    获取sql语句构建器
     public Sql getSqlBuild() {
         return this.sqlBuild;
+    }
+
+    //    获取当前的数据库连接
+    public Connection getConnection() {
+        return connection;
     }
 
     //    新增数据
@@ -106,6 +105,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             }
         } finally {
             closeConnection(statement, null);
+            closeConnection();
         }
         return false;
     }
@@ -127,6 +127,7 @@ public class BaseDao<T> implements BaseCrud<T> {
         } finally {
 //            关闭连接
             closeConnection(statement, resultSet);
+            closeConnection();
         }
         throw new RuntimeException("没有查询到对应的信息");
     }
@@ -146,6 +147,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             e.printStackTrace();
         } finally {
             closeConnection(statement, resultSet);
+            closeConnection();
         }
         throw new RuntimeException("没有找到当前分页的信息");
     }
@@ -225,6 +227,7 @@ public class BaseDao<T> implements BaseCrud<T> {
         } finally {
 //            关闭连接
             closeConnection(statement, resultSet);
+            closeConnection();
         }
         throw new RuntimeException("没有查到对应的信息");
     }
@@ -252,6 +255,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             }
         } finally {
             closeConnection(statement, null);
+            closeConnection();
         }
         return false;
     }
@@ -280,6 +284,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             }
         } finally {
             closeConnection(statement, null);
+            closeConnection();
         }
         return false;
     }
@@ -311,6 +316,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             e.printStackTrace();
         } finally {
             closeConnection(statement, resultSet);
+            closeConnection();
         }
         throw new RuntimeException("执行sql语句出错");
     }
@@ -334,6 +340,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             }
         } finally {
             closeConnection(statement, null);
+            closeConnection();
         }
         return false;
     }
@@ -367,5 +374,11 @@ public class BaseDao<T> implements BaseCrud<T> {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    //    释放当前连接
+    @Override
+    public void closeConnection() {
+        dbUtil.closeConnection(connection);
     }
 }
