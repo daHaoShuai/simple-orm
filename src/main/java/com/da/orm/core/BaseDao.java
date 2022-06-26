@@ -158,7 +158,7 @@ public class BaseDao<T> implements BaseCrud<T> {
         try {
             while (resultSet.next()) {
 //                 实例化一个要填充内容的对象
-                final T t = this.po.newInstance();
+                final T t = this.po.getConstructor().newInstance();
 //                 拿到一行的数据
                 final List<Object> data = allFieldName.stream().map(name -> {
                     Object o = null;
@@ -193,7 +193,8 @@ public class BaseDao<T> implements BaseCrud<T> {
         final List<T> list = new ArrayList<>();
         try {
             while (resultSet.next()) {
-                final T t = po.newInstance();
+//                通过无参构造器实例化
+                final T t = po.getConstructor().newInstance();
                 for (String s : data) {
 //                    下划线转驼峰
                     final String name = StringUtil.convertToLineHump(s);
@@ -220,7 +221,7 @@ public class BaseDao<T> implements BaseCrud<T> {
             statement = connection.prepareStatement(sql);
             resultSet = statement.executeQuery();
             final List<T> list = parseResultSet(resultSet);
-            if (list.size() > 1) throw new RuntimeException("当前主键对应的值不止1个");
+            if (list.size() > 1) throw new RuntimeException("当前主键有多个值");
             return list.get(0);
         } catch (Exception e) {
             e.printStackTrace();
@@ -229,7 +230,8 @@ public class BaseDao<T> implements BaseCrud<T> {
             closeConnection(statement, resultSet);
             closeConnection();
         }
-        throw new RuntimeException("没有查到对应的信息");
+//        没查到就返回null
+        return null;
     }
 
     //    通过主键删除
