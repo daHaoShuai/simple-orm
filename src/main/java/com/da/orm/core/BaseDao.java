@@ -224,14 +224,13 @@ public class BaseDao<T> implements BaseCrud<T> {
             if (list.size() > 1) throw new RuntimeException("当前主键有多个值");
             return list.get(0);
         } catch (Exception e) {
-            e.printStackTrace();
+//        没查到(或者解析错误)就返回null
+            return null;
         } finally {
 //            关闭连接
             closeConnection(statement, resultSet);
             closeConnection();
         }
-//        没查到就返回null
-        return null;
     }
 
     //    通过主键删除

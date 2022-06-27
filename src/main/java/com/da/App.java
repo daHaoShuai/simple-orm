@@ -19,8 +19,7 @@ public class App {
 
     public static void main(String[] args) {
         final BaseDao<User> dao = new BaseDao<>(User.class);
-        dao.list().forEach(System.out::println);
-        System.out.println(dao.getConnection());
+        System.out.println(dao.getById(0));
     }
 
 }
