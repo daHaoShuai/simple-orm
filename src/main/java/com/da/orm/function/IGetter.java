@@ -1,7 +1,6 @@
-package com.da;
+package com.da.orm.function;
 
-import com.da.orm.core.Sql;
-import com.da.po.User;
+import java.io.Serializable;
 
 /**
  * @Author Da
@@ -13,11 +12,10 @@ import com.da.po.User;
  * 相顾无言，惟有泪千行。
  * 每晚灯火阑珊处，夜难寐，又加班。
  * @Date: 2022-06-27
- * @Time: 11:09
+ * @Time: 17:21
+ * 通过这个接口获取属性的名字
  */
-public class App {
-    public static void main(String[] args) {
-        final String s8 = new Sql(User.class).select().where().eq(User::getName, "root").build();
-        System.out.println(s8);
-    }
+@FunctionalInterface
+public interface IGetter<T> extends Serializable {
+    Object get(T source);
 }

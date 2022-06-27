@@ -236,6 +236,10 @@ public class App {
                 .and(每页条数 * (当前页数 - 1))
                 .build();
         System.out.println(s7);
+
+//        允许通过方法引用获取对应的属性名字
+        String s8 = new Sql(User.class).select().where().eq(User::getName, "root").build();
+        System.out.println(s8);
     }
 
 }

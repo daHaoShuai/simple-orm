@@ -3,9 +3,6 @@ package com.da.po;
 import com.da.orm.annotation.Col;
 import com.da.orm.annotation.Table;
 
-import java.time.LocalDateTime;
-import java.util.Date;
-
 /**
  * @Author Da
  * @Description: <br/>
@@ -29,7 +26,6 @@ public class User {
     @Col(name = "pass")
     private String pass;
 
-    private LocalDateTime time;
 
     public Integer getId() {
         return id;
@@ -39,15 +35,7 @@ public class User {
         this.id = id;
     }
 
-    public LocalDateTime getTime() {
-        return time;
-    }
-
-    public void setTime(LocalDateTime time) {
-        this.time = time;
-    }
-
-    public String getName() {
+    public  String getName() {
         return name;
     }
 
@@ -69,7 +57,6 @@ public class User {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", pass='" + pass + '\'' +
-                ", time=" + time +
                 '}';
     }
 }

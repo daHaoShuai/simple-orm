@@ -2,6 +2,7 @@ package com.da.orm.core;
 
 import com.da.orm.annotation.Col;
 import com.da.orm.annotation.Table;
+import com.da.orm.function.IGetter;
 import com.da.orm.utils.StringUtil;
 import com.da.orm.utils.Utils;
 
@@ -36,7 +37,7 @@ public class Sql {
     private final List<String> allTableFieldName;
     //    拼接好的sql语句
     private String sql = "";
-    //    条件判断操作
+    //    条件判断操作集合
     private final Map<String, BiConsumer<Object, Object>> condition = new HashMap<>();
 
     //    拼接条件语句
@@ -47,6 +48,11 @@ public class Sql {
         condition.put("lt", (k, v) -> condition(k, v, "<"));
         condition.put("ge", (k, v) -> condition(k, v, ">="));
         condition.put("le", (k, v) -> condition(k, v, "<="));
+    }
+
+    //    拼接判断条件
+    public void condition(Object key, Object value, String condition) {
+        this.sql += key + condition + value;
     }
 
     public <T> Sql(Class<T> t) {
@@ -178,9 +184,19 @@ public class Sql {
         return this;
     }
 
+    public <T> Sql eq(IGetter<T> key, Object value) {
+        condition.get("eq").accept(Utils.getPoFieldName(key), value);
+        return this;
+    }
+
     //    不相等
     public Sql ne(String key, Object value) {
         condition.get("ne").accept(key, value);
+        return this;
+    }
+
+    public <T> Sql ne(IGetter<T> key, Object value) {
+        condition.get("ne").accept(Utils.getPoFieldName(key), value);
         return this;
     }
 
@@ -190,9 +206,19 @@ public class Sql {
         return this;
     }
 
+    public <T> Sql gt(IGetter<T> key, Object value) {
+        condition.get("gt").accept(Utils.getPoFieldName(key), value);
+        return this;
+    }
+
     //    大于等于
     public Sql ge(String key, Object value) {
         condition.get("ge").accept(key, value);
+        return this;
+    }
+
+    public <T> Sql ge(IGetter<T> key, Object value) {
+        condition.get("ge").accept(Utils.getPoFieldName(key), value);
         return this;
     }
 
@@ -202,15 +228,14 @@ public class Sql {
         return this;
     }
 
-    //    小于等于
-    public Sql le(String key, Object value) {
-        condition.get("le").accept(key, value);
+    public <T> Sql lt(IGetter<T> key, Object value) {
+        condition.get("lt").accept(Utils.getPoFieldName(key), value);
         return this;
     }
 
-    //    拼接判断条件
-    public Sql condition(Object key, Object value, String condition) {
-        this.sql += key + condition + value;
+    //    小于等于
+    public Sql le(String key, Object value) {
+        condition.get("le").accept(key, value);
         return this;
     }
 
