@@ -1,7 +1,7 @@
 package com.da;
 
-import com.da.orm.core.Sql;
-import com.da.po.User;
+import com.da.dao.UserMapper;
+import com.da.orm.core.MapperProxyFactory;
 
 /**
  * @Author Da
@@ -17,7 +17,9 @@ import com.da.po.User;
  */
 public class App {
     public static void main(String[] args) {
-        final String s8 = new Sql(User.class).select().where().eq(User::getName, "root").build();
-        System.out.println(s8);
+        final UserMapper userMapper = MapperProxyFactory.getMapper(UserMapper.class);
+        userMapper.list().forEach(System.out::println);
+        System.out.println("====================");
+        System.out.println(userMapper.getById(1, "1"));
     }
 }
