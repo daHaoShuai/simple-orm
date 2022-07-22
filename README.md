@@ -246,6 +246,7 @@ public class App {
 ```
 
 使用Mapper工厂方式操作数据库
+
 ```java
 import com.da.orm.annotation.Delete;
 import com.da.orm.annotation.Insert;
@@ -274,6 +275,7 @@ public interface UserMapper {
 
 }
 ```
+
 ```java
 import com.da.dao.UserMapper;
 import com.da.orm.core.MapperProxyFactory;
@@ -296,6 +298,27 @@ public class App {
         System.out.println(userMapper.update(user));
 //        执行删除语句(通过id来删除)
         System.out.println(userMapper.delete(12));
+    }
+}
+```
+
+```java
+import com.da.dao.UserMapper;
+import com.da.orm.annotation.Select;
+import com.da.orm.core.MapperProxyFactory;
+
+public class App {
+    public static void main(String[] args) {
+//        从mapper工厂获取到UserMapper的代理类
+        final UserMapper userMapper = MapperProxyFactory.getMapper(UserMapper.class);
+//        允许在before中执行一些操作,参数是方法和传入方法的参数
+        MapperProxyFactory.before = (method, args1) -> {
+            if (method.isAnnotationPresent(Select.class)) {
+                System.out.println(method.getAnnotation(Select.class).value());
+            }
+        };
+//        执行查询语句
+        userMapper.list().forEach(System.out::println);
     }
 }
 ```

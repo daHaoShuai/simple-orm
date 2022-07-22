@@ -4,10 +4,12 @@ import com.da.orm.annotation.Delete;
 import com.da.orm.annotation.Insert;
 import com.da.orm.annotation.Select;
 import com.da.orm.annotation.Update;
+import com.da.orm.function.ProxyBefore;
 import com.da.orm.utils.DBUtil;
 import com.da.orm.utils.StringUtil;
 import com.da.orm.utils.Utils;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
@@ -19,6 +21,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 
 /**
@@ -32,6 +35,7 @@ public class MapperProxyFactory {
 
     private static final DBUtil dbUtil = DBUtil.getInstance();
     private static final Connection connection = dbUtil.getConnection();
+    public static ProxyBefore before;
 
     //    返回代理后的mapper
     @SuppressWarnings("unchecked")//忽略强转类型的警告
@@ -39,6 +43,8 @@ public class MapperProxyFactory {
 //        创建代理对象
         final Object proxyInstance = Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),
                 new Class[]{mapper}, (proxy, method, args) -> {
+//                    在这个方法执行前的操作
+                    before.exec(method, args);
 //             处理 @Select 或者 @Insert 或者 @Update 或者 @Delete 注解的方法
                     if (method.isAnnotationPresent(Select.class)) {
                         return handlerSelect(method, args);
