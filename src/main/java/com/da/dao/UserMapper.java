@@ -1,5 +1,6 @@
 package com.da.dao;
 
+import com.da.orm.annotation.Insert;
 import com.da.orm.annotation.Select;
 import com.da.po.User;
 
@@ -18,4 +19,8 @@ public interface UserMapper {
 
     @Select("select * from user where name = #{name} and id = #{id}")
     User getById(Integer id, String name);
+
+    @Insert("insert into user (name,pass) values(?,?)")
+    boolean add(User user);
+
 }
