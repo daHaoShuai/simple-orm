@@ -19,8 +19,8 @@ public interface UserMapper {
     @Select("select * from user")
     List<User> list();
 
-    @Select("select * from user where name = #{name} and id = #{id}")
-    User getById(Integer id, String name);
+    @Select("select * from user where id = #{id}")
+    User getById(Integer id);
 
     @Insert("insert into user (name,pass) values(#{name},#{pass})")
     boolean add(User user);

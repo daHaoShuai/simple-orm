@@ -4,6 +4,9 @@ import com.da.dao.UserMapper;
 import com.da.orm.annotation.Select;
 import com.da.orm.core.MapperProxyFactory;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+
 /**
  * @Author Da
  * @Description: <br/>
@@ -18,15 +21,11 @@ import com.da.orm.core.MapperProxyFactory;
  */
 public class App {
     public static void main(String[] args) {
-//        从mapper工厂获取到UserMapper的代理类
-        final UserMapper userMapper = MapperProxyFactory.getMapper(UserMapper.class);
-//        允许在before中执行一些操作,参数是方法和传入方法的参数
-        MapperProxyFactory.before = (method, args1) -> {
-            if (method.isAnnotationPresent(Select.class)) {
-                System.out.println(method.getAnnotation(Select.class).value());
+        for (Method method : UserMapper.class.getDeclaredMethods()) {
+            final Parameter[] parameters = method.getParameters();
+            for (Parameter parameter : parameters) {
+                System.out.println(parameter.getName());
             }
-        };
-//        执行查询语句
-        userMapper.list().forEach(System.out::println);
+        }
     }
 }

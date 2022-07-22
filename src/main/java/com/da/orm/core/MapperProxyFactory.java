@@ -44,7 +44,9 @@ public class MapperProxyFactory {
         final Object proxyInstance = Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),
                 new Class[]{mapper}, (proxy, method, args) -> {
 //                    在这个方法执行前的操作
-                    before.exec(method, args);
+                    if (before != null) {
+                        before.exec(method, args);
+                    }
 //             处理 @Select 或者 @Insert 或者 @Update 或者 @Delete 注解的方法
                     if (method.isAnnotationPresent(Select.class)) {
                         return handlerSelect(method, args);
