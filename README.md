@@ -244,3 +244,58 @@ public class App {
 
 }
 ```
+
+使用Mapper工厂方式操作数据库
+```java
+import com.da.orm.annotation.Delete;
+import com.da.orm.annotation.Insert;
+import com.da.orm.annotation.Select;
+import com.da.orm.annotation.Update;
+import com.da.po.User;
+
+import java.util.List;
+
+public interface UserMapper {
+
+    @Select("select * from user")
+    List<User> list();
+
+    @Select("select * from user where name = #{name} and id = #{id}")
+    User getById(Integer id, String name);
+
+    @Insert("insert into user (name,pass) values(#{name},#{pass})")
+    boolean add(User user);
+
+    @Update("update user set name = #{name}, pass = #{pass} where id = #{id}")
+    boolean update(User user);
+
+    @Delete("delete from user where id = #{id}")
+    boolean delete(Integer id);
+
+}
+```
+```java
+import com.da.dao.UserMapper;
+import com.da.orm.core.MapperProxyFactory;
+import com.da.po.User;
+
+public class App {
+    public static void main(String[] args) {
+//        从mapper工厂获取到UserMapper的代理类
+        final UserMapper userMapper = MapperProxyFactory.getMapper(UserMapper.class);
+//        执行查询语句
+        userMapper.list().forEach(System.out::println);
+        final User user = new User();
+        user.setName("222");
+        user.setPass("222");
+//        执行插入语句
+        System.out.println(userMapper.add(user));
+//        更新id为2的数据
+        user.setId(2);
+//        执行更新语句
+        System.out.println(userMapper.update(user));
+//        执行删除语句(通过id来删除)
+        System.out.println(userMapper.delete(12));
+    }
+}
+```

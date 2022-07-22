@@ -1,7 +1,9 @@
 package com.da.dao;
 
+import com.da.orm.annotation.Delete;
 import com.da.orm.annotation.Insert;
 import com.da.orm.annotation.Select;
+import com.da.orm.annotation.Update;
 import com.da.po.User;
 
 import java.util.List;
@@ -20,7 +22,13 @@ public interface UserMapper {
     @Select("select * from user where name = #{name} and id = #{id}")
     User getById(Integer id, String name);
 
-    @Insert("insert into user (name,pass) values(?,?)")
+    @Insert("insert into user (name,pass) values(#{name},#{pass})")
     boolean add(User user);
+
+    @Update("update user set name = #{name}, pass = #{pass} where id = #{id}")
+    boolean update(User user);
+
+    @Delete("delete from user where id = #{id}")
+    boolean delete(Integer id);
 
 }

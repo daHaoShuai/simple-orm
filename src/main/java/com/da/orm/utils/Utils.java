@@ -6,8 +6,12 @@ import com.da.orm.function.IGetter;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Author Da
@@ -59,4 +63,48 @@ public class Utils {
         }
     }
 
+    //    获取方法返回的值的类型
+    @SuppressWarnings("unchecked")//忽略强转类型的警告
+    public static <T> Class<T> getResultType(Method method) {
+        Class<T> clz = null;
+        final Type type = method.getGenericReturnType();
+//        不是范型
+        if (type instanceof Class) {
+            clz = (Class<T>) type;
+        }
+//        是范型
+        else if (type instanceof ParameterizedType) {
+            final Type[] types = ((ParameterizedType) type).getActualTypeArguments();
+            clz = (Class<T>) types[0];
+        }
+        return clz;
+    }
+
+    //    获取类上的所有set方法
+    public static <T> Map<String, Method> getTypeSetMap(Class<T> type) {
+        final Map<String, Method> map = new HashMap<>();
+        for (Method method : type.getDeclaredMethods()) {
+//            获取所以set开头的方法
+            if (method.getName().startsWith("set")) {
+//                去掉set作为key
+                final String key = method.getName().substring(3);
+                map.put(key, method);
+            }
+        }
+        return map;
+    }
+
+    //    获取类上的所有get方法
+    public static <T> Map<String, Method> getTypeGetMap(Class<T> type) {
+        final Map<String, Method> map = new HashMap<>();
+        for (Method method : type.getDeclaredMethods()) {
+//            获取所以get开头的方法
+            if (method.getName().startsWith("get")) {
+//                去掉get作为key
+                final String key = method.getName().substring(3);
+                map.put(key, method);
+            }
+        }
+        return map;
+    }
 }

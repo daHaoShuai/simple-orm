@@ -2,6 +2,7 @@ package com.da;
 
 import com.da.dao.UserMapper;
 import com.da.orm.core.MapperProxyFactory;
+import com.da.po.User;
 
 /**
  * @Author Da
@@ -17,9 +18,20 @@ import com.da.orm.core.MapperProxyFactory;
  */
 public class App {
     public static void main(String[] args) {
+//        从mapper工厂获取到UserMapper的代理类
         final UserMapper userMapper = MapperProxyFactory.getMapper(UserMapper.class);
+//        执行查询语句
         userMapper.list().forEach(System.out::println);
-        System.out.println("====================");
-        System.out.println(userMapper.getById(1, "1"));
+        final User user = new User();
+        user.setName("222");
+        user.setPass("222");
+//        执行插入语句
+        System.out.println(userMapper.add(user));
+//        更新id为2的数据
+        user.setId(2);
+//        执行更新语句
+        System.out.println(userMapper.update(user));
+//        执行删除语句(通过id来删除)
+        System.out.println(userMapper.delete(12));
     }
 }

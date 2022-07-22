@@ -2,6 +2,8 @@ package com.da.orm.utils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @Author Da
@@ -69,4 +71,11 @@ public class StringUtil {
         return result.substring(0, result.lastIndexOf(str));
     }
 
+    //    匹配字符串中的 #{*}
+    public static Matcher regMateSql(String str) {
+//        正则匹配 #{..} 的内容
+        final String reg = "#\\{[a-z]+}";
+        final Pattern pattern = Pattern.compile(reg);
+        return pattern.matcher(str);
+    }
 }
