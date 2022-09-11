@@ -1,5 +1,28 @@
 # 简单封装一个自己的orm框架
 
+使用maven安装依赖
+
+```xml
+<!--添加 simple-orm 仓库地址-->
+<repositories>
+    <repository>
+        <id>simple-orm</id>
+        <url>https://raw.githubusercontent.com/daHaoShuai/simple-orm/main/repo</url>
+    </repository>
+</repositories>
+```
+
+```xml
+<!--添加依赖-->
+<dependencies>
+    <dependency>
+        <groupId>com.da</groupId>
+        <artifactId>simple-orm</artifactId>
+        <version>1.0.1</version>
+    </dependency>
+</dependencies>
+```
+
 创建一张user表
 
 ```sql
